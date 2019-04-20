@@ -48,4 +48,5 @@
 .globl _sp_blocks_0
 .globl _sp_blocks_1
 .globl _sp_blocks_2
-.globl _sp_scene1_00
+.globl _g_tileset_00
+.globl _g_level01

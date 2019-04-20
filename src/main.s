@@ -97,7 +97,7 @@ defineEntity player, 0, 40, 180, 40, 180, 2, 2, blocks_width, blocks_height, #_s
 ;;  INPUT: IX pointer to the entity
 ;;  OUTPUT:
 ;;  DESTROYS: A
-_move_entity_right:
+move_entity_right::
     ld a, e_x(ix)
     ;; check screen border
     cp #(screen_max_X - blocks_width)
@@ -116,7 +116,7 @@ no_move_right:
 ;;  INPUT: IX pointer to the entity
 ;;  OUTPUT:
 ;;  DESTROYS: A
-_move_entity_left:
+move_entity_left::
     ld a, e_x(ix)
     ;; check screen border
     or a
@@ -135,7 +135,7 @@ no_move_left:
 ;;  INPUT: IX pointer to the entity
 ;;  OUTPUT:
 ;;  DESTROYS: AF, BC, DE, HL
-_draw_entity:
+draw_entity::
    ;; Calculate a video-memory location for drawing the entity
    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
    ld   b, e_y(ix)                      ;; B = y coordinate 
@@ -157,7 +157,7 @@ ret
 ;;  INPUT: IX pointer to the entity
 ;;  OUTPUT:
 ;;  DESTROYS: AF, BC, DE, HL
-_update_entity:
+update_entity::
     ;; Erase Sprite
    ;; Calculate a video-memory location for drawing the entity
    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
@@ -229,7 +229,7 @@ board1:
 ;;  DrawBoard
 ;;  
 ;;
-_draw_board:
+draw_board::
 
 ret
 
@@ -239,7 +239,7 @@ ret
 ;; Init Function
 ;;
 ;;
-_init_main:
+init_main::
  ;; Set Palette
    ld    hl, #_sp_palette           ;; HL = pointer to the start of the palette array
    ld    de, #palette_size           ;; DE = Size of the palette array (num of colours)
@@ -269,12 +269,14 @@ _init_main:
     ld c, #10
     ld b, #6
     ld de, #14
-    ld hl, #_sp_scene1_00
+    ld hl, #_g_tileset_00
     call cpct_etm_setDrawTilemap4x8_ag_asm
     
+    ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
+    ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
 
-    ld hl, #0xC004
-    ld de, #14
+    ld hl, #0xC000
+    ld de, #_g_level01
     call cpct_etm_drawTilemap4x8_agf_asm
 
     ret 
@@ -287,10 +289,10 @@ _main::
     ;; Disable firmware to prevent it from interfering with string drawing
     call cpct_disableFirmware_asm
     ;; Call to de main initialization
-    call _init_main
+    call init_main
     ;; First sprite draw
     ld ix, #player
-    call _draw_entity
+    call draw_entity
   
 ;; Main loop
 main_loop:
@@ -301,7 +303,7 @@ main_loop:
     call cpct_isKeyPressed_asm
     or a
     jp z, no_right
-    call _move_entity_right
+    call move_entity_right
 no_right:
 
 ;; Check left movement
@@ -309,12 +311,12 @@ no_right:
     call cpct_isKeyPressed_asm
     or a
     jp z, no_left
-    call _move_entity_left
+    call move_entity_left
 no_left:
 
     ld a, e_status(ix)
     and #0b10000000
     jp z, no_update
-    call _update_entity
+    call update_entity
  no_update:
     jr    main_loop

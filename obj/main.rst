@@ -2560,23 +2560,25 @@ Hexadecimal [16-Bits]
                              31 .globl cpct_px2byteM0_asm
                              32 .globl cpct_setPalette_asm
                              33 .globl cpct_etm_setDrawTilemap4x8_ag_asm
-                             34 .globl _sp_palette
-                             35 .globl _sp_upPills_0
-                             36 .globl _sp_upPills_1
-                             37 .globl _sp_upPills_2
-                             38 .globl _sp_downPills_0
-                             39 .globl _sp_downPills_1
-                             40 .globl _sp_downPills_2
-                             41 .globl _sp_leftPills_0
-                             42 .globl _sp_leftPills_1
-                             43 .globl _sp_leftPills_2
-                             44 .globl _sp_rightPills_0
-                             45 .globl _sp_rightPills_1
-                             46 .globl _sp_rightPills_2
-                             47 .globl _sp_blocks_0
-                             48 .globl _sp_blocks_1
-                             49 .globl _sp_blocks_2
-                             50 .globl _sp_scene1_00
+                             34 .globl cpct_etm_drawTilemap4x8_agf_asm
+                             35 .globl _sp_palette
+                             36 .globl _sp_upPills_0
+                             37 .globl _sp_upPills_1
+                             38 .globl _sp_upPills_2
+                             39 .globl _sp_downPills_0
+                             40 .globl _sp_downPills_1
+                             41 .globl _sp_downPills_2
+                             42 .globl _sp_leftPills_0
+                             43 .globl _sp_leftPills_1
+                             44 .globl _sp_leftPills_2
+                             45 .globl _sp_rightPills_0
+                             46 .globl _sp_rightPills_1
+                             47 .globl _sp_rightPills_2
+                             48 .globl _sp_blocks_0
+                             49 .globl _sp_blocks_1
+                             50 .globl _sp_blocks_2
+                             51 .globl _g_tileset_00
+                             52 .globl _g_level01
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 51.
 Hexadecimal [16-Bits]
 
@@ -2678,7 +2680,7 @@ Hexadecimal [16-Bits]
                              97 ;;  INPUT: IX pointer to the entity
                              98 ;;  OUTPUT:
                              99 ;;  DESTROYS: A
-   4484                     100 _move_entity_right:
+   4484                     100 move_entity_right::
    4484 DD 7E 01      [19]  101     ld a, e_x(ix)
                             102     ;; check screen border
    4487 FE 4D         [ 7]  103     cp #(screen_max_X - blocks_width)
@@ -2702,7 +2704,7 @@ Hexadecimal [16-Bits]
 
 
 
-   449B                     119 _move_entity_left:
+   449B                     119 move_entity_left::
    449B DD 7E 01      [19]  120     ld a, e_x(ix)
                             121     ;; check screen border
    449E B7            [ 4]  122     or a
@@ -2721,13 +2723,13 @@ Hexadecimal [16-Bits]
                             135 ;;  INPUT: IX pointer to the entity
                             136 ;;  OUTPUT:
                             137 ;;  DESTROYS: AF, BC, DE, HL
-   44B1                     138 _draw_entity:
+   44B1                     138 draw_entity::
                             139    ;; Calculate a video-memory location for drawing the entity
    44B1 11 00 C0      [10]  140    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
    44B4 DD 46 02      [19]  141    ld   b, e_y(ix)                      ;; B = y coordinate 
    44B7 DD 4E 01      [19]  142    ld   c, e_x(ix)                      ;; C = x coordinate 
                             143 
-   44BA CD A5 46      [17]  144    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+   44BA CD 5D 47      [17]  144    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
                             145    
                             146    ;; Draw Sprite
    44BD EB            [ 4]  147    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
@@ -2735,7 +2737,7 @@ Hexadecimal [16-Bits]
    44C1 DD 6E 09      [19]  149    ld   l, e_sprite + 0(ix)    ;; |
    44C4 DD 46 07      [19]  150    ld   b, e_width(ix)         ;; B = Player Width (bytes)
    44C7 DD 4E 08      [19]  151    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   44CA CD 7D 46      [17]  152    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+   44CA CD 35 47      [17]  152    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
    44CD C9            [10]  153 ret
                             154 
                             155 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2743,20 +2745,20 @@ Hexadecimal [16-Bits]
                             157 ;;  INPUT: IX pointer to the entity
                             158 ;;  OUTPUT:
                             159 ;;  DESTROYS: AF, BC, DE, HL
-   44CE                     160 _update_entity:
+   44CE                     160 update_entity::
                             161     ;; Erase Sprite
                             162    ;; Calculate a video-memory location for drawing the entity
    44CE 11 00 C0      [10]  163    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
    44D1 DD 46 04      [19]  164    ld   b, e_py(ix)                      ;; B = y coordinate 
    44D4 DD 4E 03      [19]  165    ld   c, e_px(ix)                      ;; C = x coordinate 
-   44D7 CD A5 46      [17]  166    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+   44D7 CD 5D 47      [17]  166    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
                             167    ;; Draw Sprite
    44DA EB            [ 4]  168    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
    44DB DD 66 0A      [19]  169    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
    44DE DD 6E 09      [19]  170    ld   l, e_sprite + 0(ix)    ;; |
    44E1 DD 46 07      [19]  171    ld   b, e_width(ix)         ;; B = Player Width (bytes)
    44E4 DD 4E 08      [19]  172    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   44E7 CD 7D 46      [17]  173    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+   44E7 CD 35 47      [17]  173    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 54.
 Hexadecimal [16-Bits]
 
@@ -2776,14 +2778,14 @@ Hexadecimal [16-Bits]
    44F6 11 00 C0      [10]  185    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
    44F9 DD 46 02      [19]  186    ld   b, e_y(ix)                      ;; B = y coordinate 
    44FC DD 4E 01      [19]  187    ld   c, e_x(ix)                      ;; C = x coordinate 
-   44FF CD A5 46      [17]  188    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+   44FF CD 5D 47      [17]  188    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
                             189    ;; Draw Sprite
    4502 EB            [ 4]  190    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
    4503 DD 66 0A      [19]  191    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
    4506 DD 6E 09      [19]  192    ld   l, e_sprite + 0(ix)    ;; |
    4509 DD 46 07      [19]  193    ld   b, e_width(ix)         ;; B = Player Width (bytes)
    450C DD 4E 08      [19]  194    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   450F CD 7D 46      [17]  195    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+   450F CD 35 47      [17]  195    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
                             196    
                             197    ;; Update status
    4512 DD 7E 00      [19]  198    ld a, e_status(ix)
@@ -2844,7 +2846,7 @@ Hexadecimal [16-Bits]
                             229 ;;  DrawBoard
                             230 ;;  
                             231 ;;
-   45B5                     232 _draw_board:
+   45B5                     232 draw_board::
                             233 
    45B5 C9            [10]  234 ret
                             235 
@@ -2854,20 +2856,20 @@ Hexadecimal [16-Bits]
                             239 ;; Init Function
                             240 ;;
                             241 ;;
-   45B6                     242 _init_main:
+   45B6                     242 init_main::
                             243  ;; Set Palette
    45B6 21 2A 44      [10]  244    ld    hl, #_sp_palette           ;; HL = pointer to the start of the palette array
    45B9 11 10 00      [10]  245    ld    de, #palette_size           ;; DE = Size of the palette array (num of colours)
-   45BC CD 29 46      [17]  246    call  cpct_setPalette_asm        ;; Set the new palette
+   45BC CD 31 46      [17]  246    call  cpct_setPalette_asm        ;; Set the new palette
                             247 
    45BF 0E 00         [ 7]  248     ld  c, #0                     ;; C = 0 (Mode 0)
-   45C1 CD 46 46      [17]  249     call cpct_setVideoMode_asm    ;; Set Mode 0
+   45C1 CD 4E 46      [17]  249     call cpct_setVideoMode_asm    ;; Set Mode 0
                             250 
                             251 
                             252 
    45C4 26 00         [ 7]  253     ld h, #0                ;; left pixel color
    45C6 2E 00         [ 7]  254     ld l, #0                ;; right pixel color 
-   45C8 CD 53 46      [17]  255     call cpct_px2byteM0_asm
+   45C8 CD 5B 46      [17]  255     call cpct_px2byteM0_asm
                             256 
    45CB 21 00 C0      [10]  257     ld hl, #CPCT_VMEM_START_ASM
    45CE 77            [ 7]  258     ld (hl), a         ;; color definido antes 
@@ -2888,49 +2890,60 @@ Hexadecimal [16-Bits]
                             268 
    45D7 0E 0A         [ 7]  269     ld c, #10
    45D9 06 06         [ 7]  270     ld b, #6
-   45DB 16 00         [ 7]  271     ld d, #0
-   45DD 1E 0E         [ 7]  272     ld e, #14
-   45DF 21 EE 40      [10]  273     ld hl, #_sp_scene1_00
-   45E2 CD F2 46      [17]  274     call cpct_etm_setDrawTilemap4x8_ag_asm
-                            275     
-   45E5 C9            [10]  276     ret 
+   45DB 11 0E 00      [10]  271     ld de, #14
+   45DE 21 EE 40      [10]  272     ld hl, #_g_tileset_00
+   45E1 CD AA 47      [17]  273     call cpct_etm_setDrawTilemap4x8_ag_asm
+                            274     
+                            275     ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
+                            276     ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
                             277 
-                            278 ;;
-                            279 ;; MAIN function. This is the entry point of the application.
-                            280 ;;    _main:: global symbol is required for correctly compiling and linking
-                            281 ;;
-   45E6                     282 _main::
-                            283     ;; Disable firmware to prevent it from interfering with string drawing
-   45E6 CD 6D 46      [17]  284     call cpct_disableFirmware_asm
-                            285     ;; Call to de main initialization
-   45E9 CD B6 45      [17]  286     call _init_main
-                            287     ;; First sprite draw
-   45EC DD 21 79 44   [14]  288     ld ix, #player
-   45F0 CD B1 44      [17]  289     call _draw_entity
-                            290   
-                            291 ;; Main loop
-   45F3                     292 main_loop:
-   45F3 CD C1 46      [17]  293     call cpct_scanKeyboard_asm  ;; Reads keyboard
-                            294     
-                            295     ;; Check right movement
-   45F6 21 03 08      [10]  296     ld hl, #Key_P               
-   45F9 CD 1D 46      [17]  297     call cpct_isKeyPressed_asm
-   45FC B7            [ 4]  298     or a
-   45FD CA 03 46      [10]  299     jp z, no_right
-   4600 CD 84 44      [17]  300     call _move_entity_right
-   4603                     301 no_right:
-                            302 
-                            303 ;; Check left movement
-   4603 21 04 04      [10]  304     ld hl, #Key_O               
-   4606 CD 1D 46      [17]  305     call cpct_isKeyPressed_asm
-   4609 B7            [ 4]  306     or a
-   460A CA 10 46      [10]  307     jp z, no_left
-   460D CD 9B 44      [17]  308     call _move_entity_left
-   4610                     309 no_left:
-                            310 
-   4610 DD 7E 00      [19]  311     ld a, e_status(ix)
-   4613 E6 80         [ 7]  312     and #0b10000000
-   4615 CA 1B 46      [10]  313     jp z, no_update
-   4618 CD CE 44      [17]  314     call _update_entity
-   461B                     315  no_update:
-   461B 18 D6         [12]  316     jr    main_loop
+   45E4 21 00 C0      [10]  278     ld hl, #0xC000
+   45E7 11 00 40      [10]  279     ld de, #_g_level01
+   45EA CD 75 46      [17]  280     call cpct_etm_drawTilemap4x8_agf_asm
+                            281 
+   45ED C9            [10]  282     ret 
+                            283 
+                            284 ;;
+                            285 ;; MAIN function. This is the entry point of the application.
+                            286 ;;    _main:: global symbol is required for correctly compiling and linking
+                            287 ;;
+   45EE                     288 _main::
+                            289     ;; Disable firmware to prevent it from interfering with string drawing
+   45EE CD 25 47      [17]  290     call cpct_disableFirmware_asm
+                            291     ;; Call to de main initialization
+   45F1 CD B6 45      [17]  292     call init_main
+                            293     ;; First sprite draw
+   45F4 DD 21 79 44   [14]  294     ld ix, #player
+   45F8 CD B1 44      [17]  295     call draw_entity
+                            296   
+                            297 ;; Main loop
+   45FB                     298 main_loop:
+   45FB CD 79 47      [17]  299     call cpct_scanKeyboard_asm  ;; Reads keyboard
+                            300     
+                            301     ;; Check right movement
+   45FE 21 03 08      [10]  302     ld hl, #Key_P               
+   4601 CD 25 46      [17]  303     call cpct_isKeyPressed_asm
+   4604 B7            [ 4]  304     or a
+   4605 CA 0B 46      [10]  305     jp z, no_right
+   4608 CD 84 44      [17]  306     call move_entity_right
+   460B                     307 no_right:
+                            308 
+                            309 ;; Check left movement
+   460B 21 04 04      [10]  310     ld hl, #Key_O               
+   460E CD 25 46      [17]  311     call cpct_isKeyPressed_asm
+   4611 B7            [ 4]  312     or a
+   4612 CA 18 46      [10]  313     jp z, no_left
+   4615 CD 9B 44      [17]  314     call move_entity_left
+   4618                     315 no_left:
+                            316 
+   4618 DD 7E 00      [19]  317     ld a, e_status(ix)
+   461B E6 80         [ 7]  318     and #0b10000000
+   461D CA 23 46      [10]  319     jp z, no_update
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 57.
+Hexadecimal [16-Bits]
+
+
+
+   4620 CD CE 44      [17]  320     call update_entity
+   4623                     321  no_update:
+   4623 18 D6         [12]  322     jr    main_loop
