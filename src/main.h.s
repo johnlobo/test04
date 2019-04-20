@@ -30,6 +30,8 @@
 .globl cpct_isKeyPressed_asm
 .globl cpct_px2byteM0_asm
 .globl cpct_setPalette_asm
+.globl cpct_etm_setDrawTilemap4x8_ag_asm
+.globl cpct_etm_drawTilemap4x8_agf_asm
 .globl _sp_palette
 .globl _sp_upPills_0
 .globl _sp_upPills_1
@@ -46,3 +48,4 @@
 .globl _sp_blocks_0
 .globl _sp_blocks_1
 .globl _sp_blocks_2
+.globl _sp_scene1_00

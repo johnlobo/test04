@@ -64,6 +64,7 @@
 ##
 
 #$(eval $(call TMX2C,img/level0b.tmx,g_level0_4bit,src/levels/,4))
+$(eval $(call TMX2C,assets/scene01.tmx,g_level01,src/levels/,))
 
 
 

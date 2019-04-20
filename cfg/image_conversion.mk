@@ -33,7 +33,7 @@
 ## Default values
 #$(eval $(call IMG2SP, SET_MODE        , 0                  ))  { 0, 1, 2 }
 #$(eval $(call IMG2SP, SET_MASK        , none               ))  { interlaced, none }
-#$(eval $(call IMG2SP, SET_FOLDER      , src/               ))
+#$(eval $(call IMG2SP, SET_FOLDER      , src/sprites               ))
 #$(eval $(call IMG2SP, SET_EXTRAPAR    ,                    ))
 #$(eval $(call IMG2SP, SET_IMG_FORMAT  , sprites            ))	{ sprites, zgtiles, screen }
 #$(eval $(call IMG2SP, SET_OUTPUT      , c                  ))  { bin, c }
@@ -67,8 +67,12 @@ $(eval $(call IMG2SPRITES,assets/downPills.png,0,sp,6,7,$(PAL),,src/sprites,))
 $(eval $(call IMG2SPRITES,assets/leftPills.png,0,sp,6,7,$(PAL),,src/sprites,))
 $(eval $(call IMG2SPRITES,assets/rightPills.png,0,sp,6,7,$(PAL),,src/sprites,))
 $(eval $(call IMG2SPRITES,assets/blocks.png,0,sp,6,7,$(PAL),,src/sprites,))
+#$(eval $(call IMG2SPRITES,assets/scene1.png,0,sp,8,8,$(PAL),,src/sprites,))
 
-
+$(eval $(call IMG2SP, SET_FOLDER     , src/maps/))
+$(eval $(call IMG2SP, SET_IMG_FORMAT , zgtiles))
+$(eval $(call IMG2SP, SET_PALETTE_FW , $(PAL))) 
+$(eval $(call IMG2SP, CONVERT        , assets/scene1.png, 8, 8, g_tileset, g_palette,))
 
 ############################################################################
 ##              DETAILED INSTRUCTIONS AND PARAMETERS                      ##

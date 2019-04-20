@@ -61,7 +61,7 @@ max_Y = 200
 ;;    he:           Height of the Player Sprite (bytes)
 ;;    sp:       Pointer to the player sprite
 ;;
-.macro defineEntity name, st, x, y, px, py wi, he, sp
+.macro defineEntity name, st, x, y, px, py, vx, vy, wi, he, sp
    ;; Struct data
    name:
       .db st     ;; Status of the Player
@@ -69,22 +69,28 @@ max_Y = 200
       .db y     ;; Y location of the Player (pixels)
       .db px     ;; X location of the Player (bytes)
       .db py     ;; Y location of the Player (pixels)
+      .db vx      ;; Speed X
+      .db vy     ;; Speed Y 
       .db wi     ;; Width of the Player Sprite (bytes)
       .db he     ;; Height of the Player Sprite (bytes)
       .dw sp ;; Pointer to the player sprite
+    name'_size = . - name
 .endm
+
 ;; Entinty Offset constants
 e_status = 0  ;; Status byte: bit7: moved
 e_x = 1
 e_y = 2
 e_px = 3
 e_py = 4
-e_width = 5
-e_height = 6
-e_sprite = 7
+e_vx = 5
+e_vy = 6
+e_width = 7
+e_height = 8
+e_sprite = 9
 
 ;; Define Entity Player
-defineEntity player, 0, 58, 60, 58, 60, blocks_width, blocks_height, #_sp_blocks_0
+defineEntity player, 0, 40, 180, 40, 180, 2, 2, blocks_width, blocks_height, #_sp_blocks_0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FUNC: _move_entity_right
@@ -96,7 +102,7 @@ _move_entity_right:
     ;; check screen border
     cp #(screen_max_X - blocks_width)
     jp z, no_move_right
-    inc a
+    add e_vx(ix)
     ld e_x(ix), a
     ;; Update status
     ld a, e_status(ix)      ;; Load status byte into A
@@ -115,7 +121,7 @@ _move_entity_left:
     ;; check screen border
     or a
     jp z, no_move_left
-    dec a
+    sub e_vx(ix)
     ld e_x(ix), a
     ;; Update status
     ld a, e_status(ix)      ;; Load status byte into A
@@ -253,6 +259,24 @@ _init_main:
     ld de, #0xc001
     ld bc, #0x4000
     ldir
+
+    ;;(1B C) width	Width in tiles of the view window to be drawn
+    ;;(1B B) height	Height in tiles of the view window to be drawn
+    ;;(2B DE) tilemapWidth	Width in tiles of the complete tilemap
+    ;;(2B HL) tileset	Pointer to the start of the tileset definition (list of 32-byte tiles).
+    ;;Note: it also uses current interrupt status (register I) as a value.  It should be considered as an additional parameter.
+
+    ld c, #10
+    ld b, #6
+    ld de, #14
+    ld hl, #_sp_scene1_00
+    call cpct_etm_setDrawTilemap4x8_ag_asm
+    
+
+    ld hl, #0xC004
+    ld de, #14
+    call cpct_etm_drawTilemap4x8_agf_asm
+
     ret 
 
 ;;
