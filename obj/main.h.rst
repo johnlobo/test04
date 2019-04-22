@@ -36,22 +36,10 @@ Hexadecimal [16-Bits]
                              31 .globl cpct_px2byteM0_asm
                              32 .globl cpct_setPalette_asm
                              33 .globl cpct_etm_setDrawTilemap4x8_ag_asm
-                             34 .globl cpct_etm_drawTilemap4x8_agf_asm
+                             34 .globl cpct_etm_drawTilemap4x8_ag_asm
                              35 .globl _sp_palette
-                             36 .globl _sp_upPills_0
-                             37 .globl _sp_upPills_1
-                             38 .globl _sp_upPills_2
-                             39 .globl _sp_downPills_0
-                             40 .globl _sp_downPills_1
-                             41 .globl _sp_downPills_2
-                             42 .globl _sp_leftPills_0
-                             43 .globl _sp_leftPills_1
-                             44 .globl _sp_leftPills_2
-                             45 .globl _sp_rightPills_0
-                             46 .globl _sp_rightPills_1
-                             47 .globl _sp_rightPills_2
-                             48 .globl _sp_blocks_0
-                             49 .globl _sp_blocks_1
-                             50 .globl _sp_blocks_2
-                             51 .globl _g_tileset_00
-                             52 .globl _g_level01
+                             36 .globl _sp_blocks_0
+                             37 .globl _sp_blocks_1
+                             38 .globl _sp_blocks_2
+                             39 .globl _g_tileset_00
+                             40 .globl _g_tilemap

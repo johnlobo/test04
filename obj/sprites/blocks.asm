@@ -11,6 +11,7 @@
 	.globl _sp_blocks_2
 	.globl _sp_blocks_1
 	.globl _sp_blocks_0
+	.globl _sp_palette
 ;--------------------------------------------------------
 ; special function registers
 ;--------------------------------------------------------
@@ -43,6 +44,23 @@
 ;--------------------------------------------------------
 	.area _CODE
 	.area _CODE
+_sp_palette:
+	.db #0x54	; 84	'T'
+	.db #0x4d	; 77	'M'
+	.db #0x40	; 64
+	.db #0x5c	; 92
+	.db #0x4c	; 76	'L'
+	.db #0x4e	; 78	'N'
+	.db #0x4a	; 74	'J'
+	.db #0x52	; 82	'R'
+	.db #0x56	; 86	'V'
+	.db #0x5e	; 94
+	.db #0x53	; 83	'S'
+	.db #0x5f	; 95
+	.db #0x55	; 85	'U'
+	.db #0x58	; 88	'X'
+	.db #0x44	; 68	'D'
+	.db #0x4b	; 75	'K'
 _sp_blocks_0:
 	.db #0x14	; 20
 	.db #0x3c	; 60

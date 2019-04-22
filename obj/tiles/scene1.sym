@@ -25,6 +25,18 @@ Symbol Table
   0 _g_tileset_15                                                  01E0 GR
   0 _g_tileset_16                                                  0200 GR
   0 _g_tileset_17                                                  0220 GR
+  0 _g_tileset_18                                                  0240 GR
+  0 _g_tileset_19                                                  0260 GR
+  0 _g_tileset_20                                                  0280 GR
+  0 _g_tileset_21                                                  02A0 GR
+  0 _g_tileset_22                                                  02C0 GR
+  0 _g_tileset_23                                                  02E0 GR
+  0 _g_tileset_24                                                  0300 GR
+  0 _g_tileset_25                                                  0320 GR
+  0 _g_tileset_26                                                  0340 GR
+  0 _g_tileset_27                                                  0360 GR
+  0 _g_tileset_28                                                  0380 GR
+  0 _g_tileset_29                                                  03A0 GR
 
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 2.
@@ -32,7 +44,7 @@ Hexadecimal [16-Bits]
 
 Area Table
 
-   0 _CODE                                      size  240   flags    0
+   0 _CODE                                      size  3C0   flags    0
    1 _DATA                                      size    0   flags    0
    2 _INITIALIZED                               size    0   flags    0
    3 _DABS                                      size    0   flags    8

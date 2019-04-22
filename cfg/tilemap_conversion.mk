@@ -38,6 +38,16 @@
 # Conversion 
 #$(eval $(call TMX2DATA, CONVERT, tmxfile, array )) 
 
+$(eval $(call TMX2DATA, SET_ASMVARPREFIX, yes       ))   
+$(eval $(call TMX2DATA, SET_USEMACROS   , yes       ))  
+$(eval $(call TMX2DATA, SET_OUTPUTS     , h s       ))  
+$(eval $(call TMX2DATA, SET_BASE        , dec       ))  
+$(eval $(call TMX2DATA, SET_BITSPERITEM , 8         ))   
+$(eval $(call TMX2DATA, SET_FOLDER      , src/levels      )) 
+#$(eval $(call TMX2DATA, SET_EXTRAPAR    ,           ))	
+# Conversion 
+$(eval $(call TMX2DATA, CONVERT, assets/scene01.tmx, g_tilemap )) 
+
 
 ##
 ## OLD MACROS (For compatibility)
@@ -64,7 +74,7 @@
 ##
 
 #$(eval $(call TMX2C,img/level0b.tmx,g_level0_4bit,src/levels/,4))
-$(eval $(call TMX2C,assets/scene01.tmx,g_level01,src/levels/,))
+#$(eval $(call TMX2C,assets/scene01.tmx,g_level01,src/levels/,))
 
 
 

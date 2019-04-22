@@ -1,15 +1,19 @@
 //
-// File assets/scene01.tmx converted to csv using cpct_tmx2csv [20190421 01:35:12 CEST]
-//   * Width:  14 columns (14 bytes, 8 bits per column)
-//   * Height: 17 rows
-//   * Bytes:  238 bytes (14 x 17)
+// File assets/scene01.tmx converted to csv using cpct_tmx2data [Mon Apr 22 00:39:53 2019]
+//   * Visible Layers:  1
+//   * Layer Width:     40
+//   * Layer Height:    40
+//   * Bits per tile:   8
+//   * Layer Bytes:     1600 (40 x 40 items, 8 bits per item)
+//   * Total Bytes:     1600 (1600 x 1, bytes per layer times layers)
 //
 #include <types.h>
 
-// Generated CSV tilemap from assets/scene01.tmx
-//   238 bytes (14 x 17)
-//   14*17 items (8 bits per item)
+//#### Width and height constants ####
+#define g_tilemap_W  40
+#define g_tilemap_H  40
+
+//#### Converted layer tilemaps ####
+//   Visible layers: 1
 //
-#define g_level01_W  14
-#define g_level01_H  17
-extern const u8 g_level01[14*17];
+extern const u8 g_tilemap[1600];

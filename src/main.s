@@ -90,7 +90,7 @@ e_height = 8
 e_sprite = 9
 
 ;; Define Entity Player
-defineEntity player, 0, 40, 180, 40, 180, 2, 2, blocks_width, blocks_height, #_sp_blocks_0
+defineEntity player, 0, 40, 100, 40, 100, 1, 1, blocks_width, blocks_height, #_sp_blocks_0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FUNC: _move_entity_right
@@ -100,8 +100,8 @@ defineEntity player, 0, 40, 180, 40, 180, 2, 2, blocks_width, blocks_height, #_s
 move_entity_right::
     ld a, e_x(ix)
     ;; check screen border
-    cp #(screen_max_X - blocks_width)
-    jp z, no_move_right
+    cp #(screen_max_X - blocks_width -1)
+    jp nc, no_move_right
     add e_vx(ix)
     ld e_x(ix), a
     ;; Update status
@@ -226,14 +226,88 @@ board1:
     .db 0,0,0,0,0,0,0,0
     .db 0,0,0,0,0,0,0,0
 
-;;  DrawBoard
+scroll_offset: .dw 0
+
+;;  DrawScreen
 ;;  
 ;;
-draw_board::
+draw_screen::
+    ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
+    ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
+    ld de, #0xC004
+    ld hl, #_g_tilemap
+    ld bc, (scroll_offset)
+    adc hl, bc
+    ex de, hl
+    call cpct_etm_drawTilemap4x8_ag_asm
+    ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: move_scroll_right
+;;  INPUT: 
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
+move_scroll_right::
+    ld hl, (scroll_offset)
+    ld de, #1
+    adc hl,de
+    ld (scroll_offset), hl
+    call draw_screen
+    ret
 
-ret
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: move_scroll_left
+;;  INPUT: 
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
+move_scroll_left::
+    ld hl, (scroll_offset)
+    ;; If scroll_offset != 0
+    ld a, h
+    or a         ; a = 0 ??
+    jr nz, not_equal_left
+    ld a,l
+    or a         ; a = 0 ??
+    jr  nz, not_equal_left
+    ret
+not_equal_left:
+    ld de, #-1
+    adc hl,de
+    ld (scroll_offset), hl
+    call draw_screen
+    ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: move_scroll_down
+;;  INPUT: 
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
+move_scroll_down::
+    ld hl, (scroll_offset)
+    ld de, #40
+    adc hl,de
+    ld (scroll_offset), hl
+    call draw_screen
+    ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: move_scroll_down
+;;  INPUT: 
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
+move_scroll_up::
+    ld hl, (scroll_offset)
+    ;; If scroll_offset != 0
+    ld a, h
+    or a         ; a = 0 ??
+    jr nz, not_equal_up
+    ld a,l
+    or a         ; a = 0 ??
+    jr  nz, not_equal_up
+    ret
+not_equal_up:
+    ld de, #-40
+    adc hl,de
+    ld (scroll_offset), hl
+    call draw_screen
+    ret
 
 ;;
 ;; Init Function
@@ -250,8 +324,8 @@ init_main::
 
 
 
-    ld h, #0                ;; left pixel color
-    ld l, #0                ;; right pixel color 
+    ld h, #3                ;; left pixel color
+    ld l, #3                ;; right pixel color 
     call cpct_px2byteM0_asm
 
     ld hl, #CPCT_VMEM_START_ASM
@@ -266,18 +340,13 @@ init_main::
     ;;(2B HL) tileset	Pointer to the start of the tileset definition (list of 32-byte tiles).
     ;;Note: it also uses current interrupt status (register I) as a value.  It should be considered as an additional parameter.
 
-    ld c, #10
-    ld b, #6
-    ld de, #14
+    ld c, #14
+    ld b, #18
+    ld de, #40
     ld hl, #_g_tileset_00
     call cpct_etm_setDrawTilemap4x8_ag_asm
     
-    ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
-    ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
-
-    ld hl, #0xC000
-    ld de, #_g_level01
-    call cpct_etm_drawTilemap4x8_agf_asm
+    jp draw_screen
 
     ret 
 
@@ -319,4 +388,37 @@ no_left:
     jp z, no_update
     call update_entity
  no_update:
+
+;; Check right scroll
+    ld hl, #Key_L               
+    call cpct_isKeyPressed_asm
+    or a
+    jp z, no_right_scroll
+    call move_scroll_right
+no_right_scroll:
+
+;; Check left scroll
+    ld hl, #Key_J               
+    call cpct_isKeyPressed_asm
+    or a
+    jp z, no_left_scroll
+    call move_scroll_left
+no_left_scroll:
+
+;; Check up scroll
+    ld hl, #Key_I               
+    call cpct_isKeyPressed_asm
+    or a
+    jp z, no_up_scroll
+    call move_scroll_up
+no_up_scroll:
+
+;; Check down scroll
+    ld hl, #Key_K               
+    call cpct_isKeyPressed_asm
+    or a
+    jp z, no_down_scroll
+    call move_scroll_down
+no_down_scroll:
+
     jr    main_loop

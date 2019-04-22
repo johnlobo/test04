@@ -7,13 +7,9 @@
 -k /Users/david/Documents/retro/proyectos/cpctelera/cpctelera/tools/sdcc-3.6.8-r9946/share/sdcc/lib/z80
 -l /Users/david/Documents/retro/proyectos/cpctelera/cpctelera/cpctelera.lib
 -l z80
-obj/levels/scene01.rel
-obj/maps/scene1.rel
+obj/tiles/scene1.rel
 obj/sprites/blocks.rel
-obj/sprites/rightPills.rel
-obj/sprites/leftPills.rel
-obj/sprites/downPills.rel
-obj/sprites/upPills.rel
+obj/levels/scene01.rel
 obj/main.h.rel
 obj/main.rel
 

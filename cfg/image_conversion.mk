@@ -62,19 +62,19 @@ PAL={ 0 8 13 3 6 15 24 18 9 12 20 14 2 4 1 26 }
 
 #$(eval $(call IMG2SPRITES,img/example.png,0,pre,24,12,$(PALETTE),mask,src/,hwpalette))
 
-$(eval $(call IMG2SPRITES,assets/upPills.png,0,sp,6,7,$(PAL),,src/sprites,hwpalette))
-$(eval $(call IMG2SPRITES,assets/downPills.png,0,sp,6,7,$(PAL),,src/sprites,))
-$(eval $(call IMG2SPRITES,assets/leftPills.png,0,sp,6,7,$(PAL),,src/sprites,))
-$(eval $(call IMG2SPRITES,assets/rightPills.png,0,sp,6,7,$(PAL),,src/sprites,))
-$(eval $(call IMG2SPRITES,assets/blocks.png,0,sp,6,7,$(PAL),,src/sprites,))
+#$(eval $(call IMG2SPRITES,assets/upPills.png,0,sp,6,7,$(PAL),,src/sprites,hwpalette))
+#$(eval $(call IMG2SPRITES,assets/downPills.png,0,sp,6,7,$(PAL),,src/sprites,))
+#$(eval $(call IMG2SPRITES,assets/leftPills.png,0,sp,6,7,$(PAL),,src/sprites,))
+#$(eval $(call IMG2SPRITES,assets/rightPills.png,0,sp,6,7,$(PAL),,src/sprites,))
+$(eval $(call IMG2SPRITES,assets/blocks.png,0,sp,6,7,$(PAL),,src/sprites,hwpalette))
 #$(eval $(call IMG2SPRITES,assets/scene1.png,0,sp,8,8,$(PAL),,src/sprites,))
 
 
 PALETTE=0 8 13 3 6 15 24 18 9 12 20 14 2 4 1 26
-
-$(eval $(call IMG2SP, SET_FOLDER     , src/maps/))
+#
+$(eval $(call IMG2SP, SET_FOLDER     , src/tiles/))
 $(eval $(call IMG2SP, SET_IMG_FORMAT , zgtiles))
-#$(eval $(call IMG2SP, SET_PALETTE_FW , $(PALETTE))) 
+$(eval $(call IMG2SP, SET_PALETTE_FW , $(PALETTE))) 
 $(eval $(call IMG2SP, CONVERT        , assets/scene1.png, 8, 8, g_tileset,,))
 
 ############################################################################

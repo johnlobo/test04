@@ -3,6 +3,8 @@
 #define _ASSETS_BLOCKS_H_
 
 #include <types.h>
+extern const u8 sp_palette[16];
+
 #define SP_BLOCKS_0_W 3
 #define SP_BLOCKS_0_H 7
 extern const u8 sp_blocks_0[3 * 7];
