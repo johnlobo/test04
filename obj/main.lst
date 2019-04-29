@@ -2561,12 +2561,13 @@ Hexadecimal [16-Bits]
                              32 .globl cpct_setPalette_asm
                              33 .globl cpct_etm_setDrawTilemap4x8_ag_asm
                              34 .globl cpct_etm_drawTilemap4x8_ag_asm
-                             35 .globl _sp_palette
-                             36 .globl _sp_blocks_0
-                             37 .globl _sp_blocks_1
-                             38 .globl _sp_blocks_2
-                             39 .globl _g_tileset_00
-                             40 .globl _g_tilemap
+                             35 .globl cpct_waitVSYNC_asm
+                             36 .globl _sp_palette
+                             37 .globl _sp_blocks_0
+                             38 .globl _sp_blocks_1
+                             39 .globl _sp_blocks_2
+                             40 .globl _g_tileset_00
+                             41 .globl _g_tilemap
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 51.
 Hexadecimal [16-Bits]
 
@@ -2600,445 +2601,503 @@ Hexadecimal [16-Bits]
                              47 .area _CODE
                              48 
                              49 ;;
-                             50 ;; Macro: struct Player
-                             51 ;;    Macro that creates a new initialized instance of Player Struct
-                             52 ;; 
-                             53 ;; Parameters:
-                             54 ;;    instanceName: name of the variable that will be created as an instance of Player struct
-                             55 ;;    st:           status of the player
-                             56 ;;    x:            X location of the Entity (bytes)
-                             57 ;;    y:            Y location of the Entity (pixels)
-                             58 ;;    px:           Prevoius X location of the Entity (bytes)
-                             59 ;;    py:           Previous Y location of the Entity (pixels)
-                             60 ;;    wi:           Width of the Player Sprite (bytes)
-                             61 ;;    he:           Height of the Player Sprite (bytes)
-                             62 ;;    sp:       Pointer to the player sprite
+                             50 ;; jump table
+                             51 ;;
+                             52 
+   0000                      53 jump_table:
+   0000 F6                   54     .db #-10
+   0001 FA                   55     .db #-6
+   0002 FE                   56     .db #-2
+   0003 00                   57     .db #0
+   0004 00                   58     .db #0
+   0005 02                   59     .db #2
+   0006 06                   60     .db #6
+   0007 0A                   61     .db #10
+                             62 
                              63 ;;
-                             64 .macro defineEntity name, st, x, y, px, py, vx, vy, wi, he, sp
-                             65    ;; Struct data
-                             66    name:
-                             67       .db st     ;; Status of the Player
-                             68       .db x     ;; X location of the Player (bytes)
-                             69       .db y     ;; Y location of the Player (pixels)
-                             70       .db px     ;; X location of the Player (bytes)
-                             71       .db py     ;; Y location of the Player (pixels)
-                             72       .db vx      ;; Speed X
-                             73       .db vy     ;; Speed Y 
-                             74       .db wi     ;; Width of the Player Sprite (bytes)
-                             75       .db he     ;; Height of the Player Sprite (bytes)
-                             76       .dw sp ;; Pointer to the player sprite
+                             64 ;; Macro: struct Player
+                             65 ;;    Macro that creates a new initialized instance of Player Struct
+                             66 ;; 
+                             67 ;; Parameters:
+                             68 ;;    instanceName: name of the variable that will be created as an instance of Player struct
+                             69 ;;    st:           status of the player
+                             70 ;;                  bit 0-3 jump_step
+                             71 ;;                  bit 4 jump_status
+                             72 ;;                  bit 7 active 
+                             73 ;;    x:            X location of the Entity (bytes)
+                             74 ;;    y:            Y location of the Entity (pixels)
+                             75 ;;    px:           Prevoius X location of the Entity (bytes)
+                             76 ;;    py:           Previous Y location of the Entity (pixels)
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 52.
 Hexadecimal [16-Bits]
 
 
 
-                             77     name'_size = . - name
-                             78 .endm
-                             79 
-                             80 ;; Entinty Offset constants
-                     0000    81 e_status = 0  ;; Status byte: bit7: moved
-                     0001    82 e_x = 1
-                     0002    83 e_y = 2
-                     0003    84 e_px = 3
-                     0004    85 e_py = 4
-                     0005    86 e_vx = 5
-                     0006    87 e_vy = 6
-                     0007    88 e_width = 7
-                     0008    89 e_height = 8
-                     0009    90 e_sprite = 9
-                             91 
-                             92 ;; Define Entity Player
-   0000                      93 defineEntity player, 0, 40, 100, 40, 100, 1, 1, blocks_width, blocks_height, #_sp_blocks_0
+                             77 ;;    wi:           Width of the Player Sprite (bytes)
+                             78 ;;    he:           Height of the Player Sprite (bytes)
+                             79 ;;    sp:       Pointer to the player sprite
+                             80 ;;
+                             81 .macro defineEntity name, st, x, y, px, py, vx, vy, wi, he, sp
+                             82    ;; Struct data
+                             83    name:
+                             84       .db st     ;; Status of the Player
+                             85       .db x     ;; X location of the Player (bytes)
+                             86       .db y     ;; Y location of the Player (pixels)
+                             87       .db px     ;; X location of the Player (bytes)
+                             88       .db py     ;; Y location of the Player (pixels)
+                             89       .db vx      ;; Speed X
+                             90       .db vy     ;; Speed Y 
+                             91       .db wi     ;; Width of the Player Sprite (bytes)
+                             92       .db he     ;; Height of the Player Sprite (bytes)
+                             93       .dw sp ;; Pointer to the player sprite
+                             94     name'_size = . - name
+                             95 .endm
+                             96 
+                             97 ;; Entinty Offset constants
+                     0000    98 e_status = 0  ;; Status byte: bit7: moved - bytes 0-3 jump status
+                     0001    99 e_x = 1
+                     0002   100 e_y = 2
+                     0003   101 e_px = 3
+                     0004   102 e_py = 4
+                     0005   103 e_vx = 5
+                     0006   104 e_vy = 6
+                     0007   105 e_width = 7
+                     0008   106 e_height = 8
+                     0009   107 e_sprite = 9
+                            108 
+                            109 ;; Define Entity Player
+   0008                     110 defineEntity player, 0, 40, 100, 40, 100, 1, 1, blocks_width, blocks_height, #_sp_blocks_0
                               1    ;; Struct data
-   0000                       2    player:
-   0000 00                    3       .db 0     ;; Status of the Player
-   0001 28                    4       .db 40     ;; X location of the Player (bytes)
-   0002 64                    5       .db 100     ;; Y location of the Player (pixels)
-   0003 28                    6       .db 40     ;; X location of the Player (bytes)
-   0004 64                    7       .db 100     ;; Y location of the Player (pixels)
-   0005 01                    8       .db 1      ;; Speed X
-   0006 01                    9       .db 1     ;; Speed Y 
-   0007 03                   10       .db blocks_width     ;; Width of the Player Sprite (bytes)
-   0008 07                   11       .db blocks_height     ;; Height of the Player Sprite (bytes)
-   0009 00 00                12       .dw #_sp_blocks_0 ;; Pointer to the player sprite
+   0008                       2    player:
+   0008 00                    3       .db 0     ;; Status of the Player
+   0009 28                    4       .db 40     ;; X location of the Player (bytes)
+   000A 64                    5       .db 100     ;; Y location of the Player (pixels)
+   000B 28                    6       .db 40     ;; X location of the Player (bytes)
+   000C 64                    7       .db 100     ;; Y location of the Player (pixels)
+   000D 01                    8       .db 1      ;; Speed X
+   000E 01                    9       .db 1     ;; Speed Y 
+   000F 03                   10       .db blocks_width     ;; Width of the Player Sprite (bytes)
+   0010 07                   11       .db blocks_height     ;; Height of the Player Sprite (bytes)
+   0011 00 00                12       .dw #_sp_blocks_0 ;; Pointer to the player sprite
                      000B    13     player_size = . - player
-                             94 
-                             95 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                             96 ;;  FUNC: _move_entity_right
-                             97 ;;  INPUT: IX pointer to the entity
-                             98 ;;  OUTPUT:
-                             99 ;;  DESTROYS: A
-   000B                     100 move_entity_right::
-   000B DD 7E 01      [19]  101     ld a, e_x(ix)
-                            102     ;; check screen border
-   000E FE 4C         [ 7]  103     cp #(screen_max_X - blocks_width -1)
-   0010 D2 21 00      [10]  104     jp nc, no_move_right
-   0013 DD 86 05      [19]  105     add e_vx(ix)
-   0016 DD 77 01      [19]  106     ld e_x(ix), a
-                            107     ;; Update status
-   0019 DD 7E 00      [19]  108     ld a, e_status(ix)      ;; Load status byte into A
-   001C F6 80         [ 7]  109     or #0b10000000       ;; Set active bit of entity to 1
-   001E DD 77 00      [19]  110     ld e_status(ix),a       ;; load back the state byte in the entity
-   0021                     111 no_move_right:    
-   0021 C9            [10]  112     ret
-                            113 
-                            114 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            115 ;;  FUNC: _move_entity_left
-                            116 ;;  INPUT: IX pointer to the entity
-                            117 ;;  OUTPUT:
-                            118 ;;  DESTROYS: A
+                            111 
+                            112 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            113 ;;  FUNC: _move_entity_right
+                            114 ;;  INPUT: IX pointer to the entity
+                            115 ;;  OUTPUT:
+                            116 ;;  DESTROYS: A
+   0013                     117 move_entity_right::
+   0013 DD 7E 01      [19]  118     ld a, e_x(ix)
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 53.
 Hexadecimal [16-Bits]
 
 
 
-   0022                     119 move_entity_left::
-   0022 DD 7E 01      [19]  120     ld a, e_x(ix)
-                            121     ;; check screen border
-   0025 B7            [ 4]  122     or a
-   0026 CA 37 00      [10]  123     jp z, no_move_left
-   0029 DD 96 05      [19]  124     sub e_vx(ix)
-   002C DD 77 01      [19]  125     ld e_x(ix), a
-                            126     ;; Update status
-   002F DD 7E 00      [19]  127     ld a, e_status(ix)      ;; Load status byte into A
-   0032 F6 80         [ 7]  128     or #0b10000000       ;; Set active bit of entity to 1
-   0034 DD 77 00      [19]  129     ld e_status(ix),a       ;; load back the state byte in the entity
-   0037                     130 no_move_left:
-   0037 C9            [10]  131     ret
-                            132 
-                            133 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            134 ;;  FUNC: _draw_entity
-                            135 ;;  INPUT: IX pointer to the entity
-                            136 ;;  OUTPUT:
-                            137 ;;  DESTROYS: AF, BC, DE, HL
-   0038                     138 draw_entity::
-                            139    ;; Calculate a video-memory location for drawing the entity
-   0038 11 00 C0      [10]  140    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
-   003B DD 46 02      [19]  141    ld   b, e_y(ix)                      ;; B = y coordinate 
-   003E DD 4E 01      [19]  142    ld   c, e_x(ix)                      ;; C = x coordinate 
-                            143 
-   0041 CD 00 00      [17]  144    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
-                            145    
-                            146    ;; Draw Sprite
-   0044 EB            [ 4]  147    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
-   0045 DD 66 0A      [19]  148    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
-   0048 DD 6E 09      [19]  149    ld   l, e_sprite + 0(ix)    ;; |
-   004B DD 46 07      [19]  150    ld   b, e_width(ix)         ;; B = Player Width (bytes)
-   004E DD 4E 08      [19]  151    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   0051 CD 00 00      [17]  152    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
-   0054 C9            [10]  153 ret
-                            154 
-                            155 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            156 ;;  FUNC: _update_entity
-                            157 ;;  INPUT: IX pointer to the entity
-                            158 ;;  OUTPUT:
-                            159 ;;  DESTROYS: AF, BC, DE, HL
-   0055                     160 update_entity::
-                            161     ;; Erase Sprite
-                            162    ;; Calculate a video-memory location for drawing the entity
-   0055 11 00 C0      [10]  163    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
-   0058 DD 46 04      [19]  164    ld   b, e_py(ix)                      ;; B = y coordinate 
-   005B DD 4E 03      [19]  165    ld   c, e_px(ix)                      ;; C = x coordinate 
-   005E CD 00 00      [17]  166    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
-                            167    ;; Draw Sprite
-   0061 EB            [ 4]  168    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
-   0062 DD 66 0A      [19]  169    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
-   0065 DD 6E 09      [19]  170    ld   l, e_sprite + 0(ix)    ;; |
-   0068 DD 46 07      [19]  171    ld   b, e_width(ix)         ;; B = Player Width (bytes)
-   006B DD 4E 08      [19]  172    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   006E CD 00 00      [17]  173    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+                            119     ;; check screen border
+   0016 FE 4C         [ 7]  120     cp #(screen_max_X - blocks_width -1)
+   0018 D2 29 00      [10]  121     jp nc, no_move_right
+   001B DD 86 05      [19]  122     add e_vx(ix)
+   001E DD 77 01      [19]  123     ld e_x(ix), a
+                            124     ;; Update status
+   0021 DD 7E 00      [19]  125     ld a, e_status(ix)      ;; Load status byte into A
+   0024 F6 80         [ 7]  126     or #0b10000000       ;; Set active bit of entity to 1
+   0026 DD 77 00      [19]  127     ld e_status(ix),a       ;; load back the state byte in the entity
+   0029                     128 no_move_right:    
+   0029 C9            [10]  129     ret
+                            130 
+                            131 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            132 ;;  FUNC: _move_entity_left
+                            133 ;;  INPUT: IX pointer to the entity
+                            134 ;;  OUTPUT:
+                            135 ;;  DESTROYS: A
+   002A                     136 move_entity_left::
+   002A DD 7E 01      [19]  137     ld a, e_x(ix)
+                            138     ;; check screen border
+   002D B7            [ 4]  139     or a
+   002E CA 3F 00      [10]  140     jp z, no_move_left
+   0031 DD 96 05      [19]  141     sub e_vx(ix)
+   0034 DD 77 01      [19]  142     ld e_x(ix), a
+                            143     ;; Update status
+   0037 DD 7E 00      [19]  144     ld a, e_status(ix)      ;; Load status byte into A
+   003A F6 80         [ 7]  145     or #0b10000000       ;; Set active bit of entity to 1
+   003C DD 77 00      [19]  146     ld e_status(ix),a       ;; load back the state byte in the entity
+   003F                     147 no_move_left:
+   003F C9            [10]  148     ret
+                            149 
+                            150 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            151 ;;  FUNC: activate_jump_entity
+                            152 ;;  INPUT: IX pointer to the entity
+                            153 ;;  OUTPUT:
+                            154 ;;  DESTROYS: A
+   0040                     155 activate_jump_entity::
+   0040 DD 7E 00      [19]  156     ld a, e_status(ix)   ;; Load status byte into A
+   0043 F6 08         [ 7]  157     or #0b00001000       ;; Set jump_status bit of entity to 1
+   0045 DD 77 00      [19]  158     ld e_status(ix),a    ;; load back the state byte in the entity
+   0048 C9            [10]  159     ret
+                            160 
+                            161 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            162 ;;  FUNC: jump_entity
+                            163 ;;  INPUT: IX pointer to the entity
+                            164 ;;  OUTPUT:
+                            165 ;;  DESTROYS: A
+   0049                     166 jump_entity::
+                            167     ;; Update Y during the jump
+   0049 DD 7E 00      [19]  168     ld a, e_status(ix)
+   004C E6 07         [ 7]  169     and #0b00000111     ;; Extract the jump step from status
+   004E 16 00         [ 7]  170     ld d, #0
+   0050 5F            [ 4]  171     ld e, a             ;; Move junp step to DE
+   0051 21 00 00      [10]  172     ld hl, #jump_table  ;; Load  jump talbe address in HL
+   0054 19            [11]  173     add hl,de           ;; move  index 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 54.
 Hexadecimal [16-Bits]
 
 
 
-                            174    
-                            175    
-                            176    ;; Update previous coordinates
-   0071 DD 7E 01      [19]  177    ld a, e_x(ix)
-   0074 DD 77 03      [19]  178    ld e_px(ix), a 
-   0077 DD 7E 02      [19]  179    ld a, e_y(ix)
-   007A DD 77 04      [19]  180    ld e_py(ix), a 
-                            181    
-                            182    
-                            183    ;; Draw Sprite
-                            184    ;; Calculate a video-memory location for drawing the entity
-   007D 11 00 C0      [10]  185    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
-   0080 DD 46 02      [19]  186    ld   b, e_y(ix)                      ;; B = y coordinate 
-   0083 DD 4E 01      [19]  187    ld   c, e_x(ix)                      ;; C = x coordinate 
-   0086 CD 00 00      [17]  188    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
-                            189    ;; Draw Sprite
-   0089 EB            [ 4]  190    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
-   008A DD 66 0A      [19]  191    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
-   008D DD 6E 09      [19]  192    ld   l, e_sprite + 0(ix)    ;; |
-   0090 DD 46 07      [19]  193    ld   b, e_width(ix)         ;; B = Player Width (bytes)
-   0093 DD 4E 08      [19]  194    ld   c, e_height(ix)        ;; C = Player Height (pixels)
-   0096 CD 00 00      [17]  195    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
-                            196    
-                            197    ;; Update status
-   0099 DD 7E 00      [19]  198    ld a, e_status(ix)
-   009C E6 7F         [ 7]  199    and #0b01111111
-   009E DD 77 00      [19]  200    ld e_status(ix),a
-   00A1 C9            [10]  201 ret
-                            202 
-                            203 ;;
-                            204 ;; define board a matrix of 19x8 bytes
-                            205 ;;
-   00A2 08                  206 board_width: .db 8
-   00A3 13                  207 board_height: .db 19
-   00A4                     208 board1:
-   00A4 00 00 00 00 00 00   209     .db 0,0,0,0,0,0,0,0
-        00 00
-   00AC 00 00 00 00 00 00   210     .db 0,0,0,0,0,0,0,0
-        00 00
-   00B4 00 00 00 00 00 00   211     .db 0,0,0,0,0,0,0,0
-        00 00
-   00BC 00 00 00 00 00 00   212     .db 0,0,0,0,0,0,0,0
-        00 00
-   00C4 00 00 00 00 00 00   213     .db 0,0,0,0,0,0,0,0
-        00 00
-   00CC 00 00 00 00 00 00   214     .db 0,0,0,0,0,0,0,0
-        00 00
-   00D4 00 00 00 00 00 00   215     .db 0,0,0,0,0,0,0,0
-        00 00
-   00DC 00 00 00 00 00 00   216     .db 0,0,0,0,0,0,0,0
-        00 00
-   00E4 00 00 00 00 00 00   217     .db 0,0,0,0,0,0,0,0
-        00 00
-   00EC 00 00 00 00 00 00   218     .db 0,0,0,0,0,0,0,0
-        00 00
+   0055 46            [ 7]  174     ld b, (hl)          ;; Load jump table value into b
+   0056 DD 7E 02      [19]  175     ld a, e_y(ix)       ;; Load current Y position
+   0059 80            [ 4]  176     add b               ;; add jump step offset
+   005A DD 77 02      [19]  177     ld e_y(ix), a       ;; Load back the Y position
+                            178     ;; check jump step
+   005D DD 7E 00      [19]  179     ld a, e_status(ix)
+   0060 E6 07         [ 7]  180     and #0b00000111     ;; Extract the jump step from status
+   0062 FE 07         [ 7]  181     cp #7
+   0064 28 0D         [12]  182     jr z, jump_end       ;; if the end of the table is reached
+   0066                     183 inc_jump_step:
+   0066 3C            [ 4]  184     inc a               ;; Increment jump_step   
+   0067 47            [ 4]  185     ld b, a             ;; load new jump_step into B
+   0068 DD 7E 00      [19]  186     ld a, e_status(ix)
+   006B E6 F8         [ 7]  187     and #0b11111000     ;; Extract the jump step from status
+   006D B0            [ 4]  188     or b
+   006E DD 77 00      [19]  189     ld e_status(ix), a  ;; store new jump_status step
+   0071 18 08         [12]  190     jr end_jump_entity
+   0073                     191 jump_end:
+   0073 DD 7E 00      [19]  192     ld a, e_status(ix)
+   0076 E6 F0         [ 7]  193     and #0b11110000     ;; reset 0-3 bits of the status
+   0078 DD 77 00      [19]  194     ld e_status(ix), a  ;; store new jump_status step
+   007B                     195 end_jump_entity:
+   007B CD 7F 00      [17]  196     call set_active    
+   007E C9            [10]  197     ret
+                            198 
+                            199 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            200 ;;  FUNC: _set_active
+                            201 ;;  INPUT: IX pointer to the entity
+                            202 ;;  OUTPUT:
+                            203 ;;  DESTROYS: AF, BC, DE, HL
+   007F                     204 set_active::
+                            205     ;; Update status
+   007F DD 7E 00      [19]  206     ld a, e_status(ix)   ;; Load status byte into A
+   0082 F6 80         [ 7]  207     or #0b10000000       ;; Set active bit of entity to 1
+   0084 DD 77 00      [19]  208     ld e_status(ix),a    ;; load back the state byte in the entity
+   0087 C9            [10]  209     ret
+                            210  
+                            211 
+                            212 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            213 ;;  FUNC: _draw_entity
+                            214 ;;  INPUT: IX pointer to the entity
+                            215 ;;  OUTPUT:
+                            216 ;;  DESTROYS: AF, BC, DE, HL
+   0088                     217 draw_entity::
+                            218    ;; Calculate a video-memory location for drawing the entity
+   0088 11 00 C0      [10]  219    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
+   008B DD 46 02      [19]  220    ld   b, e_y(ix)                      ;; B = y coordinate 
+   008E DD 4E 01      [19]  221    ld   c, e_x(ix)                      ;; C = x coordinate 
+                            222 
+   0091 CD 00 00      [17]  223    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+                            224    
+                            225    ;; Draw Sprite
+   0094 EB            [ 4]  226    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
+   0095 DD 66 0A      [19]  227    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
+   0098 DD 6E 09      [19]  228    ld   l, e_sprite + 0(ix)    ;; |
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 55.
 Hexadecimal [16-Bits]
 
 
 
-   00F4 00 00 00 00 00 00   219     .db 0,0,0,0,0,0,0,0
-        00 00
-   00FC 00 00 00 00 00 00   220     .db 0,0,0,0,0,0,0,0
-        00 00
-   0104 00 00 00 00 00 00   221     .db 0,0,0,0,0,0,0,0
-        00 00
-   010C 00 00 00 00 00 00   222     .db 0,0,0,0,0,0,0,0
-        00 00
-   0114 00 00 00 00 00 00   223     .db 0,0,0,0,0,0,0,0
-        00 00
-   011C 00 00 00 00 00 00   224     .db 0,0,0,0,0,0,0,0
-        00 00
-   0124 00 00 00 00 00 00   225     .db 0,0,0,0,0,0,0,0
-        00 00
-   012C 00 00 00 00 00 00   226     .db 0,0,0,0,0,0,0,0
-        00 00
-   0134 00 00 00 00 00 00   227     .db 0,0,0,0,0,0,0,0
-        00 00
-                            228 
-   013C 00 00               229 scroll_offset: .dw 0
-                            230 
-                            231 ;;  DrawScreen
-                            232 ;;  
-                            233 ;;
-   013E                     234 draw_screen::
-                            235     ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
-                            236     ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
-   013E 11 04 C0      [10]  237     ld de, #0xC004
-   0141 21 00 00      [10]  238     ld hl, #_g_tilemap
-   0144 ED 4B 3C 01   [20]  239     ld bc, (scroll_offset)
-   0148 ED 4A         [15]  240     adc hl, bc
-   014A EB            [ 4]  241     ex de, hl
-   014B CD 00 00      [17]  242     call cpct_etm_drawTilemap4x8_ag_asm
-   014E C9            [10]  243     ret
-                            244 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            245 ;;  FUNC: move_scroll_right
-                            246 ;;  INPUT: 
-                            247 ;;  OUTPUT:
-                            248 ;;  DESTROYS: AF, BC, DE, HL
-   014F                     249 move_scroll_right::
-   014F 2A 3C 01      [16]  250     ld hl, (scroll_offset)
-   0152 11 01 00      [10]  251     ld de, #1
-   0155 ED 5A         [15]  252     adc hl,de
-   0157 22 3C 01      [16]  253     ld (scroll_offset), hl
-   015A CD 3E 01      [17]  254     call draw_screen
-   015D C9            [10]  255     ret
-                            256 
-                            257 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            258 ;;  FUNC: move_scroll_left
-                            259 ;;  INPUT: 
-                            260 ;;  OUTPUT:
-                            261 ;;  DESTROYS: AF, BC, DE, HL
-   015E                     262 move_scroll_left::
-   015E 2A 3C 01      [16]  263     ld hl, (scroll_offset)
-                            264     ;; If scroll_offset != 0
+   009B DD 46 07      [19]  229    ld   b, e_width(ix)         ;; B = Player Width (bytes)
+   009E DD 4E 08      [19]  230    ld   c, e_height(ix)        ;; C = Player Height (pixels)
+   00A1 CD 00 00      [17]  231    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+   00A4 C9            [10]  232 ret
+                            233 
+                            234 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            235 ;;  FUNC: _update_entity
+                            236 ;;  INPUT: IX pointer to the entity
+                            237 ;;  OUTPUT:
+                            238 ;;  DESTROYS: AF, BC, DE, HL
+   00A5                     239 update_entity::
+                            240     ;; Erase Sprite
+                            241    ;; Calculate a video-memory location for drawing the entity
+   00A5 11 00 C0      [10]  242    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
+   00A8 DD 46 04      [19]  243    ld   b, e_py(ix)                      ;; B = y coordinate 
+   00AB DD 4E 03      [19]  244    ld   c, e_px(ix)                      ;; C = x coordinate 
+   00AE CD 00 00      [17]  245    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+                            246    ;; Draw Sprite
+   00B1 EB            [ 4]  247    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
+   00B2 DD 66 0A      [19]  248    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
+   00B5 DD 6E 09      [19]  249    ld   l, e_sprite + 0(ix)    ;; |
+   00B8 DD 46 07      [19]  250    ld   b, e_width(ix)         ;; B = Player Width (bytes)
+   00BB DD 4E 08      [19]  251    ld   c, e_height(ix)        ;; C = Player Height (pixels)
+   00BE CD 00 00      [17]  252    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+                            253    
+                            254    
+                            255    ;; Update previous coordinates
+   00C1 DD 7E 01      [19]  256    ld a, e_x(ix)
+   00C4 DD 77 03      [19]  257    ld e_px(ix), a 
+   00C7 DD 7E 02      [19]  258    ld a, e_y(ix)
+   00CA DD 77 04      [19]  259    ld e_py(ix), a 
+                            260    
+                            261    
+                            262    ;; Draw Sprite
+                            263    ;; Calculate a video-memory location for drawing the entity
+   00CD 11 00 C0      [10]  264    ld   de, #CPCT_VMEM_START_ASM    ;; DE = Pointer to start of the screen
+   00D0 DD 46 02      [19]  265    ld   b, e_y(ix)                      ;; B = y coordinate 
+   00D3 DD 4E 01      [19]  266    ld   c, e_x(ix)                      ;; C = x coordinate 
+   00D6 CD 00 00      [17]  267    call cpct_getScreenPtr_asm    ;; Calculate video memory location and return it in HL
+                            268    ;; Draw Sprite
+   00D9 EB            [ 4]  269    ex  de, hl                       ;; DE = Pointer to Video Memory (X,Y) location
+   00DA DD 66 0A      [19]  270    ld   h, e_sprite + 1(ix)    ;; | HL = Pointer to Player Sprite
+   00DD DD 6E 09      [19]  271    ld   l, e_sprite + 0(ix)    ;; |
+   00E0 DD 46 07      [19]  272    ld   b, e_width(ix)         ;; B = Player Width (bytes)
+   00E3 DD 4E 08      [19]  273    ld   c, e_height(ix)        ;; C = Player Height (pixels)
+   00E6 CD 00 00      [17]  274    call cpct_drawSpriteBlended_asm         ;; Draw the sprite
+                            275    
+                            276    ;; Update status
+   00E9 DD 7E 00      [19]  277    ld a, e_status(ix)
+   00EC E6 7F         [ 7]  278    and #0b01111111
+   00EE DD 77 00      [19]  279    ld e_status(ix),a
+   00F1 C9            [10]  280 ret
+                            281 
+                            282 
+   00F2 00 00               283 scroll_offset: .dw 0
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 56.
 Hexadecimal [16-Bits]
 
 
 
-   0161 7C            [ 4]  265     ld a, h
-   0162 B7            [ 4]  266     or a         ; a = 0 ??
-   0163 20 05         [12]  267     jr nz, not_equal_left
-   0165 7D            [ 4]  268     ld a,l
-   0166 B7            [ 4]  269     or a         ; a = 0 ??
-   0167 20 01         [12]  270     jr  nz, not_equal_left
-   0169 C9            [10]  271     ret
-   016A                     272 not_equal_left:
-   016A 11 FF FF      [10]  273     ld de, #-1
-   016D ED 5A         [15]  274     adc hl,de
-   016F 22 3C 01      [16]  275     ld (scroll_offset), hl
-   0172 CD 3E 01      [17]  276     call draw_screen
-   0175 C9            [10]  277     ret
-                            278 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            279 ;;  FUNC: move_scroll_down
-                            280 ;;  INPUT: 
-                            281 ;;  OUTPUT:
-                            282 ;;  DESTROYS: AF, BC, DE, HL
-   0176                     283 move_scroll_down::
-   0176 2A 3C 01      [16]  284     ld hl, (scroll_offset)
-   0179 11 28 00      [10]  285     ld de, #40
-   017C ED 5A         [15]  286     adc hl,de
-   017E 22 3C 01      [16]  287     ld (scroll_offset), hl
-   0181 CD 3E 01      [17]  288     call draw_screen
-   0184 C9            [10]  289     ret
-                            290 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                            291 ;;  FUNC: move_scroll_down
-                            292 ;;  INPUT: 
-                            293 ;;  OUTPUT:
-                            294 ;;  DESTROYS: AF, BC, DE, HL
-   0185                     295 move_scroll_up::
-   0185 2A 3C 01      [16]  296     ld hl, (scroll_offset)
-                            297     ;; If scroll_offset != 0
-   0188 7C            [ 4]  298     ld a, h
-   0189 B7            [ 4]  299     or a         ; a = 0 ??
-   018A 20 05         [12]  300     jr nz, not_equal_up
-   018C 7D            [ 4]  301     ld a,l
-   018D B7            [ 4]  302     or a         ; a = 0 ??
-   018E 20 01         [12]  303     jr  nz, not_equal_up
-   0190 C9            [10]  304     ret
-   0191                     305 not_equal_up:
-   0191 11 D8 FF      [10]  306     ld de, #-40
-   0194 ED 5A         [15]  307     adc hl,de
-   0196 22 3C 01      [16]  308     ld (scroll_offset), hl
-   0199 CD 3E 01      [17]  309     call draw_screen
-   019C C9            [10]  310     ret
+                            284 
+                            285 ;;  DrawScreen
+                            286 ;;  
+                            287 ;;
+   00F4                     288 draw_screen::
+                            289     ;;(2B HL) memory	Video memory location where to draw the tilemap (character & 4-byte aligned)
+                            290     ;;(2B DE) tilemap	Pointer to the upper-left tile of the view to be drawn of the tilemap
+   00F4 11 04 C0      [10]  291     ld de, #0xC004
+   00F7 21 00 00      [10]  292     ld hl, #_g_tilemap
+   00FA ED 4B F2 00   [20]  293     ld bc, (scroll_offset)
+   00FE ED 4A         [15]  294     adc hl, bc
+   0100 EB            [ 4]  295     ex de, hl
+   0101 CD 00 00      [17]  296     call cpct_etm_drawTilemap4x8_ag_asm
+   0104 C9            [10]  297     ret
+                            298 
+                            299 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            300 ;;  FUNC: move_scroll_right
+                            301 ;;  INPUT: 
+                            302 ;;  OUTPUT:
+                            303 ;;  DESTROYS: AF, BC, DE, HL
+   0105                     304 move_scroll_right::
+   0105 2A F2 00      [16]  305     ld hl, (scroll_offset)
+   0108 11 01 00      [10]  306     ld de, #1
+   010B ED 5A         [15]  307     adc hl,de
+   010D 22 F2 00      [16]  308     ld (scroll_offset), hl
+   0110 CD F4 00      [17]  309     call draw_screen
+   0113 C9            [10]  310     ret
                             311 
-                            312 ;;
-                            313 ;; Init Function
-                            314 ;;
-                            315 ;;
-   019D                     316 init_main::
-                            317  ;; Set Palette
-   019D 21 00 00      [10]  318    ld    hl, #_sp_palette           ;; HL = pointer to the start of the palette array
-   01A0 11 10 00      [10]  319    ld    de, #palette_size           ;; DE = Size of the palette array (num of colours)
+                            312 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            313 ;;  FUNC: move_scroll_left
+                            314 ;;  INPUT: 
+                            315 ;;  OUTPUT:
+                            316 ;;  DESTROYS: AF, BC, DE, HL
+   0114                     317 move_scroll_left::
+   0114 2A F2 00      [16]  318     ld hl, (scroll_offset)
+                            319     ;; If scroll_offset != 0
+   0117 7C            [ 4]  320     ld a, h
+   0118 B7            [ 4]  321     or a         ; a = 0 ??
+   0119 20 05         [12]  322     jr nz, not_equal_left
+   011B 7D            [ 4]  323     ld a,l
+   011C B7            [ 4]  324     or a         ; a = 0 ??
+   011D 20 01         [12]  325     jr  nz, not_equal_left
+   011F C9            [10]  326     ret
+   0120                     327 not_equal_left:
+   0120 11 FF FF      [10]  328     ld de, #-1
+   0123 ED 5A         [15]  329     adc hl,de
+   0125 22 F2 00      [16]  330     ld (scroll_offset), hl
+   0128 CD F4 00      [17]  331     call draw_screen
+   012B C9            [10]  332     ret
+                            333 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            334 ;;  FUNC: move_scroll_down
+                            335 ;;  INPUT: 
+                            336 ;;  OUTPUT:
+                            337 ;;  DESTROYS: AF, BC, DE, HL
+   012C                     338 move_scroll_down::
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 57.
 Hexadecimal [16-Bits]
 
 
 
-   01A3 CD 00 00      [17]  320    call  cpct_setPalette_asm        ;; Set the new palette
-                            321 
-   01A6 0E 00         [ 7]  322     ld  c, #0                     ;; C = 0 (Mode 0)
-   01A8 CD 00 00      [17]  323     call cpct_setVideoMode_asm    ;; Set Mode 0
-                            324 
-                            325 
-                            326 
-   01AB 26 03         [ 7]  327     ld h, #3                ;; left pixel color
-   01AD 2E 03         [ 7]  328     ld l, #3                ;; right pixel color 
-   01AF CD 00 00      [17]  329     call cpct_px2byteM0_asm
-                            330 
-   01B2 21 00 C0      [10]  331     ld hl, #CPCT_VMEM_START_ASM
-   01B5 77            [ 7]  332     ld (hl), a         ;; color definido antes 
-   01B6 11 01 C0      [10]  333     ld de, #0xc001
-   01B9 01 00 40      [10]  334     ld bc, #0x4000
-   01BC ED B0         [21]  335     ldir
-                            336 
-                            337     ;;(1B C) width	Width in tiles of the view window to be drawn
-                            338     ;;(1B B) height	Height in tiles of the view window to be drawn
-                            339     ;;(2B DE) tilemapWidth	Width in tiles of the complete tilemap
-                            340     ;;(2B HL) tileset	Pointer to the start of the tileset definition (list of 32-byte tiles).
-                            341     ;;Note: it also uses current interrupt status (register I) as a value.  It should be considered as an additional parameter.
-                            342 
-   01BE 0E 0E         [ 7]  343     ld c, #14
-   01C0 06 12         [ 7]  344     ld b, #18
-   01C2 11 28 00      [10]  345     ld de, #40
-   01C5 21 00 00      [10]  346     ld hl, #_g_tileset_00
-   01C8 CD 00 00      [17]  347     call cpct_etm_setDrawTilemap4x8_ag_asm
-                            348     
-   01CB C3 3E 01      [10]  349     jp draw_screen
-                            350 
-   01CE C9            [10]  351     ret 
-                            352 
-                            353 ;;
-                            354 ;; MAIN function. This is the entry point of the application.
-                            355 ;;    _main:: global symbol is required for correctly compiling and linking
-                            356 ;;
-   01CF                     357 _main::
-                            358     ;; Disable firmware to prevent it from interfering with string drawing
-   01CF CD 00 00      [17]  359     call cpct_disableFirmware_asm
-                            360     ;; Call to de main initialization
-   01D2 CD 9D 01      [17]  361     call init_main
-                            362     ;; First sprite draw
-   01D5 DD 21 00 00   [14]  363     ld ix, #player
-   01D9 CD 38 00      [17]  364     call draw_entity
-                            365   
-                            366 ;; Main loop
-   01DC                     367 main_loop:
-   01DC CD 00 00      [17]  368     call cpct_scanKeyboard_asm  ;; Reads keyboard
-                            369     
-                            370     ;; Check right movement
-   01DF 21 03 08      [10]  371     ld hl, #Key_P               
-   01E2 CD 00 00      [17]  372     call cpct_isKeyPressed_asm
-   01E5 B7            [ 4]  373     or a
-   01E6 CA EC 01      [10]  374     jp z, no_right
+   012C 2A F2 00      [16]  339     ld hl, (scroll_offset)
+   012F 11 28 00      [10]  340     ld de, #40
+   0132 ED 5A         [15]  341     adc hl,de
+   0134 22 F2 00      [16]  342     ld (scroll_offset), hl
+   0137 CD F4 00      [17]  343     call draw_screen
+   013A C9            [10]  344     ret
+                            345 
+                            346 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            347 ;;  FUNC: move_scroll_down
+                            348 ;;  INPUT: 
+                            349 ;;  OUTPUT:
+                            350 ;;  DESTROYS: AF, BC, DE, HL
+   013B                     351 move_scroll_up::
+   013B 2A F2 00      [16]  352     ld hl, (scroll_offset)
+                            353     ;; If scroll_offset != 0
+   013E 7C            [ 4]  354     ld a, h
+   013F B7            [ 4]  355     or a         ; a = 0 ??
+   0140 20 05         [12]  356     jr nz, not_equal_up
+   0142 7D            [ 4]  357     ld a,l
+   0143 B7            [ 4]  358     or a         ; a = 0 ??
+   0144 20 01         [12]  359     jr  nz, not_equal_up
+   0146 C9            [10]  360     ret
+   0147                     361 not_equal_up:
+   0147 11 D8 FF      [10]  362     ld de, #-40
+   014A ED 5A         [15]  363     adc hl,de
+   014C 22 F2 00      [16]  364     ld (scroll_offset), hl
+   014F CD F4 00      [17]  365     call draw_screen
+   0152 C9            [10]  366     ret
+                            367 
+                            368 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            369 ;;  FUNC: init_main
+                            370 ;;  INPUT: 
+                            371 ;;  OUTPUT:
+                            372 ;;  DESTROYS: AF, BC, DE, HL
+   0153                     373 init_main::
+                            374  ;; Set Palette
+   0153 21 00 00      [10]  375    ld    hl, #_sp_palette           ;; HL = pointer to the start of the palette array
+   0156 11 10 00      [10]  376    ld    de, #palette_size           ;; DE = Size of the palette array (num of colours)
+   0159 CD 00 00      [17]  377    call  cpct_setPalette_asm        ;; Set the new palette
+                            378 
+   015C 0E 00         [ 7]  379     ld  c, #0                     ;; C = 0 (Mode 0)
+   015E CD 00 00      [17]  380     call cpct_setVideoMode_asm    ;; Set Mode 0
+                            381 
+   0161 26 03         [ 7]  382     ld h, #3                ;; left pixel color
+   0163 2E 03         [ 7]  383     ld l, #3                ;; right pixel color 
+   0165 CD 00 00      [17]  384     call cpct_px2byteM0_asm
+                            385 
+   0168 21 00 C0      [10]  386     ld hl, #CPCT_VMEM_START_ASM
+   016B 77            [ 7]  387     ld (hl), a         ;; color definido antes 
+   016C 11 01 C0      [10]  388     ld de, #0xc001
+   016F 01 00 40      [10]  389     ld bc, #0x4000
+   0172 ED B0         [21]  390     ldir
+                            391 
+                            392     ;;(1B C) width	Width in tiles of the view window to be drawn
+                            393     ;;(1B B) height	Height in tiles of the view window to be drawn
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 58.
 Hexadecimal [16-Bits]
 
 
 
-   01E9 CD 0B 00      [17]  375     call move_entity_right
-   01EC                     376 no_right:
-                            377 
-                            378 ;; Check left movement
-   01EC 21 04 04      [10]  379     ld hl, #Key_O               
-   01EF CD 00 00      [17]  380     call cpct_isKeyPressed_asm
-   01F2 B7            [ 4]  381     or a
-   01F3 CA F9 01      [10]  382     jp z, no_left
-   01F6 CD 22 00      [17]  383     call move_entity_left
-   01F9                     384 no_left:
-                            385 
-   01F9 DD 7E 00      [19]  386     ld a, e_status(ix)
-   01FC E6 80         [ 7]  387     and #0b10000000
-   01FE CA 04 02      [10]  388     jp z, no_update
-   0201 CD 55 00      [17]  389     call update_entity
-   0204                     390  no_update:
-                            391 
-                            392 ;; Check right scroll
-   0204 21 04 10      [10]  393     ld hl, #Key_L               
-   0207 CD 00 00      [17]  394     call cpct_isKeyPressed_asm
-   020A B7            [ 4]  395     or a
-   020B CA 11 02      [10]  396     jp z, no_right_scroll
-   020E CD 4F 01      [17]  397     call move_scroll_right
-   0211                     398 no_right_scroll:
-                            399 
-                            400 ;; Check left scroll
-   0211 21 05 20      [10]  401     ld hl, #Key_J               
-   0214 CD 00 00      [17]  402     call cpct_isKeyPressed_asm
-   0217 B7            [ 4]  403     or a
-   0218 CA 1E 02      [10]  404     jp z, no_left_scroll
-   021B CD 5E 01      [17]  405     call move_scroll_left
-   021E                     406 no_left_scroll:
+                            394     ;;(2B DE) tilemapWidth	Width in tiles of the complete tilemap
+                            395     ;;(2B HL) tileset	Pointer to the start of the tileset definition (list of 32-byte tiles).
+                            396     ;;Note: it also uses current interrupt status (register I) as a value.  It should be considered as an additional parameter.
+                            397 
+   0174 0E 12         [ 7]  398     ld c, #18
+   0176 06 14         [ 7]  399     ld b, #20
+   0178 11 28 00      [10]  400     ld de, #40
+   017B 21 00 00      [10]  401     ld hl, #_g_tileset_00
+   017E CD 00 00      [17]  402     call cpct_etm_setDrawTilemap4x8_ag_asm
+                            403     
+   0181 C3 F4 00      [10]  404     jp draw_screen
+                            405 
+   0184 C9            [10]  406     ret 
                             407 
-                            408 ;; Check up scroll
-   021E 21 04 08      [10]  409     ld hl, #Key_I               
-   0221 CD 00 00      [17]  410     call cpct_isKeyPressed_asm
-   0224 B7            [ 4]  411     or a
-   0225 CA 2B 02      [10]  412     jp z, no_up_scroll
-   0228 CD 85 01      [17]  413     call move_scroll_up
-   022B                     414 no_up_scroll:
-                            415 
-                            416 ;; Check down scroll
-   022B 21 04 20      [10]  417     ld hl, #Key_K               
-   022E CD 00 00      [17]  418     call cpct_isKeyPressed_asm
-   0231 B7            [ 4]  419     or a
-   0232 CA 38 02      [10]  420     jp z, no_down_scroll
-   0235 CD 76 01      [17]  421     call move_scroll_down
-   0238                     422 no_down_scroll:
-                            423 
-   0238 18 A2         [12]  424     jr    main_loop
+                            408 ;;
+                            409 ;; MAIN function. This is the entry point of the application.
+                            410 ;;    _main:: global symbol is required for correctly compiling and linking
+                            411 ;;
+   0185                     412 _main::
+                            413     ;; Disable firmware to prevent it from interfering with string drawing
+   0185 CD 00 00      [17]  414     call cpct_disableFirmware_asm
+                            415     ;; Call to de main initialization
+   0188 CD 53 01      [17]  416     call init_main
+                            417     ;; First sprite draw
+   018B DD 21 08 00   [14]  418     ld ix, #player
+   018F CD 88 00      [17]  419     call draw_entity
+                            420   
+                            421 ;; Main loop
+   0192                     422 main_loop:
+   0192 CD 00 00      [17]  423     call cpct_scanKeyboard_asm  ;; Reads keyboard
+                            424     
+                            425     ;; Check right movement
+   0195 21 03 08      [10]  426     ld hl, #Key_P               
+   0198 CD 00 00      [17]  427     call cpct_isKeyPressed_asm
+   019B B7            [ 4]  428     or a
+   019C 28 03         [12]  429     jr z, no_right
+   019E CD 13 00      [17]  430     call move_entity_right
+   01A1                     431 no_right:
+                            432 
+                            433 ;; Check left movement
+   01A1 21 04 04      [10]  434     ld hl, #Key_O               
+   01A4 CD 00 00      [17]  435     call cpct_isKeyPressed_asm
+   01A7 B7            [ 4]  436     or a
+   01A8 28 03         [12]  437     jr z, no_left
+   01AA CD 2A 00      [17]  438     call move_entity_left
+   01AD                     439 no_left:
+                            440 
+                            441 ;; Check jump movement
+   01AD 21 05 80      [10]  442     ld hl, #Key_Space               
+   01B0 CD 00 00      [17]  443     call cpct_isKeyPressed_asm
+   01B3 B7            [ 4]  444     or a
+   01B4 28 03         [12]  445     jr z, no_jump
+   01B6 CD 40 00      [17]  446     call activate_jump_entity
+   01B9                     447 no_jump:
+                            448 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 59.
+Hexadecimal [16-Bits]
+
+
+
+   01B9 DD 7E 00      [19]  449     ld a, e_status(ix)
+   01BC E6 80         [ 7]  450     and #0b10000000
+   01BE 28 03         [12]  451     jr z, no_update
+   01C0 CD A5 00      [17]  452     call update_entity
+   01C3                     453  no_update:
+   01C3 DD 7E 00      [19]  454     ld a, e_status(ix)
+   01C6 E6 08         [ 7]  455     and #0b00001000
+   01C8 28 06         [12]  456     jr z, no_jump_active
+   01CA CD 49 00      [17]  457     call jump_entity
+   01CD CD A5 00      [17]  458     call update_entity
+   01D0                     459 no_jump_active:
+                            460 
+                            461 ;; Check right scroll
+   01D0 21 04 10      [10]  462     ld hl, #Key_L               
+   01D3 CD 00 00      [17]  463     call cpct_isKeyPressed_asm
+   01D6 B7            [ 4]  464     or a
+   01D7 28 03         [12]  465     jr z, no_right_scroll
+   01D9 CD 05 01      [17]  466     call move_scroll_right
+   01DC                     467 no_right_scroll:
+                            468 
+                            469 ;; Check left scroll
+   01DC 21 05 20      [10]  470     ld hl, #Key_J               
+   01DF CD 00 00      [17]  471     call cpct_isKeyPressed_asm
+   01E2 B7            [ 4]  472     or a
+   01E3 28 03         [12]  473     jr z, no_left_scroll
+   01E5 CD 14 01      [17]  474     call move_scroll_left
+   01E8                     475 no_left_scroll:
+                            476 
+                            477 ;; Check up scroll
+   01E8 21 04 08      [10]  478     ld hl, #Key_I               
+   01EB CD 00 00      [17]  479     call cpct_isKeyPressed_asm
+   01EE B7            [ 4]  480     or a
+   01EF 28 03         [12]  481     jr z, no_up_scroll
+   01F1 CD 3B 01      [17]  482     call move_scroll_up
+   01F4                     483 no_up_scroll:
+                            484 
+                            485 ;; Check down scroll
+   01F4 21 04 20      [10]  486     ld hl, #Key_K               
+   01F7 CD 00 00      [17]  487     call cpct_isKeyPressed_asm
+   01FA B7            [ 4]  488     or a
+   01FB 28 03         [12]  489     jr z, no_down_scroll
+   01FD CD 2C 01      [17]  490     call move_scroll_down
+   0200                     491 no_down_scroll:
+                            492 
+   0200 CD 00 00      [17]  493     call cpct_waitVSYNC_asm
+   0203 CD 00 00      [17]  494     call cpct_waitVSYNC_asm
+                            495 
+   0206 18 8A         [12]  496     jr    main_loop

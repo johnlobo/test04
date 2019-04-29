@@ -54,41 +54,43 @@ Symbol Table
     Key_U   =  0405     |     Key_V   =  8006     |     Key_W   =  0807 
     Key_X   =  8007     |     Key_Y   =  0805     |     Key_Z   =  8008 
     PAL_INKR=  0040     |     PAL_PENR=  0000     |     PPI_PORT=  00F5 
-    _g_tilem   **** GX  |     _g_tiles   **** GX  |   0 _main      01CF GR
+    _g_tilem   **** GX  |     _g_tiles   **** GX  |   0 _main      0185 GR
     _sp_bloc   **** GX  |     _sp_bloc   **** GX  |     _sp_bloc   **** GX
-    _sp_pale   **** GX  |     blocks_h=  0007     |     blocks_w=  0003 
-  0 board1     00A4 R   |   0 board_he   00A3 R   |   0 board_wi   00A2 R
+    _sp_pale   **** GX  |   0 activate   0040 GR  |     blocks_h=  0007 
+    blocks_w=  0003     |     cpct_dis   **** GX  |     cpct_dra   **** GX
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 2.
 Hexadecimal [16-Bits]
 
 Symbol Table
 
-    cpct_dis   **** GX  |     cpct_dra   **** GX  |     cpct_etm   **** GX
-    cpct_etm   **** GX  |     cpct_get   **** GX  |     cpct_isK   **** GX
-    cpct_pag=  0000     |     cpct_pag=  0010     |     cpct_pag=  0020 
-    cpct_pag=  0030     |     cpct_px2   **** GX  |     cpct_sca   **** GX
-    cpct_set   **** GX  |     cpct_set   **** GX  |   0 draw_ent   0038 GR
-  0 draw_scr   013E GR  |     e_height=  0008     |     e_px    =  0003 
-    e_py    =  0004     |     e_sprite=  0009     |     e_status=  0000 
-    e_vx    =  0005     |     e_vy    =  0006     |     e_width =  0007 
-    e_x     =  0001     |     e_y     =  0002     |   0 init_mai   019D GR
-  0 main_loo   01DC R   |     max_X   =  0050     |     max_Y   =  00C8 
-    min_X   =  0000     |     min_Y   =  0000     |   0 move_ent   0022 GR
-  0 move_ent   000B GR  |   0 move_scr   0176 GR  |   0 move_scr   015E GR
-  0 move_scr   014F GR  |   0 move_scr   0185 GR  |   0 no_down_   0238 R
-  0 no_left    01F9 R   |   0 no_left_   021E R   |   0 no_move_   0037 R
-  0 no_move_   0021 R   |   0 no_right   01EC R   |   0 no_right   0211 R
-  0 no_up_sc   022B R   |   0 no_updat   0204 R   |   0 not_equa   016A R
-  0 not_equa   0191 R   |     opc_DI  =  00F3     |     opc_EI  =  00FB 
+    cpct_etm   **** GX  |     cpct_etm   **** GX  |     cpct_get   **** GX
+    cpct_isK   **** GX  |     cpct_pag=  0000     |     cpct_pag=  0010 
+    cpct_pag=  0020     |     cpct_pag=  0030     |     cpct_px2   **** GX
+    cpct_sca   **** GX  |     cpct_set   **** GX  |     cpct_set   **** GX
+    cpct_wai   **** GX  |   0 draw_ent   0088 GR  |   0 draw_scr   00F4 GR
+    e_height=  0008     |     e_px    =  0003     |     e_py    =  0004 
+    e_sprite=  0009     |     e_status=  0000     |     e_vx    =  0005 
+    e_vy    =  0006     |     e_width =  0007     |     e_x     =  0001 
+    e_y     =  0002     |   0 end_jump   007B R   |   0 inc_jump   0066 R
+  0 init_mai   0153 GR  |   0 jump_end   0073 R   |   0 jump_ent   0049 GR
+  0 jump_tab   0000 R   |   0 main_loo   0192 R   |     max_X   =  0050 
+    max_Y   =  00C8     |     min_X   =  0000     |     min_Y   =  0000 
+  0 move_ent   002A GR  |   0 move_ent   0013 GR  |   0 move_scr   012C GR
+  0 move_scr   0114 GR  |   0 move_scr   0105 GR  |   0 move_scr   013B GR
+  0 no_down_   0200 R   |   0 no_jump    01B9 R   |   0 no_jump_   01D0 R
+  0 no_left    01AD R   |   0 no_left_   01E8 R   |   0 no_move_   003F R
+  0 no_move_   0029 R   |   0 no_right   01A1 R   |   0 no_right   01DC R
+  0 no_up_sc   01F4 R   |   0 no_updat   01C3 R   |   0 not_equa   0120 R
+  0 not_equa   0147 R   |     opc_DI  =  00F3     |     opc_EI  =  00FB 
     opc_JR  =  0018     |     opc_LD_D=  0016     |     palette_=  0010 
-  0 player     0000 R   |     player_s=  000B     |     screen_m=  0050 
-  0 scroll_o   013C R   |   0 update_e   0055 GR
+  0 player     0008 R   |     player_s=  000B     |     screen_m=  0050 
+  0 scroll_o   00F2 R   |   0 set_acti   007F GR  |   0 update_e   00A5 GR
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 3.
 Hexadecimal [16-Bits]
 
 Area Table
 
-   0 _CODE      size  23A   flags    0
+   0 _CODE      size  208   flags    0
    1 _DATA      size    0   flags    0
 

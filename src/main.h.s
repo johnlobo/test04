@@ -32,6 +32,7 @@
 .globl cpct_setPalette_asm
 .globl cpct_etm_setDrawTilemap4x8_ag_asm
 .globl cpct_etm_drawTilemap4x8_ag_asm
+.globl cpct_waitVSYNC_asm
 .globl _sp_palette
 .globl _sp_blocks_0
 .globl _sp_blocks_1

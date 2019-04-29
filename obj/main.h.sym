@@ -9,7 +9,7 @@ Symbol Table
     _sp_pale   **** GX  |     cpct_dis   **** GX  |     cpct_dra   **** GX
     cpct_etm   **** GX  |     cpct_etm   **** GX  |     cpct_get   **** GX
     cpct_isK   **** GX  |     cpct_px2   **** GX  |     cpct_sca   **** GX
-    cpct_set   **** GX  |     cpct_set   **** GX
+    cpct_set   **** GX  |     cpct_set   **** GX  |     cpct_wai   **** GX
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180), page 2.
 Hexadecimal [16-Bits]

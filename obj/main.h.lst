@@ -37,9 +37,10 @@ Hexadecimal [16-Bits]
                              32 .globl cpct_setPalette_asm
                              33 .globl cpct_etm_setDrawTilemap4x8_ag_asm
                              34 .globl cpct_etm_drawTilemap4x8_ag_asm
-                             35 .globl _sp_palette
-                             36 .globl _sp_blocks_0
-                             37 .globl _sp_blocks_1
-                             38 .globl _sp_blocks_2
-                             39 .globl _g_tileset_00
-                             40 .globl _g_tilemap
+                             35 .globl cpct_waitVSYNC_asm
+                             36 .globl _sp_palette
+                             37 .globl _sp_blocks_0
+                             38 .globl _sp_blocks_1
+                             39 .globl _sp_blocks_2
+                             40 .globl _g_tileset_00
+                             41 .globl _g_tilemap

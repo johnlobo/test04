@@ -47,12 +47,29 @@ max_Y = 200
 .area _CODE
 
 ;;
+;; jump table
+;;
+
+jump_table:
+    .db #-10
+    .db #-6
+    .db #-2
+    .db #0
+    .db #0
+    .db #2
+    .db #6
+    .db #10
+
+;;
 ;; Macro: struct Player
 ;;    Macro that creates a new initialized instance of Player Struct
 ;; 
 ;; Parameters:
 ;;    instanceName: name of the variable that will be created as an instance of Player struct
 ;;    st:           status of the player
+;;                  bit 0-3 jump_step
+;;                  bit 4 jump_status
+;;                  bit 7 active 
 ;;    x:            X location of the Entity (bytes)
 ;;    y:            Y location of the Entity (pixels)
 ;;    px:           Prevoius X location of the Entity (bytes)
@@ -78,7 +95,7 @@ max_Y = 200
 .endm
 
 ;; Entinty Offset constants
-e_status = 0  ;; Status byte: bit7: moved
+e_status = 0  ;; Status byte: bit7: moved - bytes 0-3 jump status
 e_x = 1
 e_y = 2
 e_px = 3
@@ -129,6 +146,68 @@ move_entity_left::
     ld e_status(ix),a       ;; load back the state byte in the entity
 no_move_left:
     ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: activate_jump_entity
+;;  INPUT: IX pointer to the entity
+;;  OUTPUT:
+;;  DESTROYS: A
+activate_jump_entity::
+    ld a, e_status(ix)   ;; Load status byte into A
+    or #0b00001000       ;; Set jump_status bit of entity to 1
+    ld e_status(ix),a    ;; load back the state byte in the entity
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: jump_entity
+;;  INPUT: IX pointer to the entity
+;;  OUTPUT:
+;;  DESTROYS: A
+jump_entity::
+    ;; Update Y during the jump
+    ld a, e_status(ix)
+    and #0b00000111     ;; Extract the jump step from status
+    ld d, #0
+    ld e, a             ;; Move junp step to DE
+    ld hl, #jump_table  ;; Load  jump talbe address in HL
+    add hl,de           ;; move  index 
+    ld b, (hl)          ;; Load jump table value into b
+    ld a, e_y(ix)       ;; Load current Y position
+    add b               ;; add jump step offset
+    ld e_y(ix), a       ;; Load back the Y position
+    ;; check jump step
+    ld a, e_status(ix)
+    and #0b00000111     ;; Extract the jump step from status
+    cp #7
+    jr z, jump_end       ;; if the end of the table is reached
+inc_jump_step:
+    inc a               ;; Increment jump_step   
+    ld b, a             ;; load new jump_step into B
+    ld a, e_status(ix)
+    and #0b11111000     ;; Extract the jump step from status
+    or b
+    ld e_status(ix), a  ;; store new jump_status step
+    jr end_jump_entity
+jump_end:
+    ld a, e_status(ix)
+    and #0b11110000     ;; reset 0-3 bits of the status
+    ld e_status(ix), a  ;; store new jump_status step
+end_jump_entity:
+    call set_active    
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: _set_active
+;;  INPUT: IX pointer to the entity
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
+set_active::
+    ;; Update status
+    ld a, e_status(ix)   ;; Load status byte into A
+    or #0b10000000       ;; Set active bit of entity to 1
+    ld e_status(ix),a    ;; load back the state byte in the entity
+    ret
+ 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FUNC: _draw_entity
@@ -200,31 +279,6 @@ update_entity::
    ld e_status(ix),a
 ret
 
-;;
-;; define board a matrix of 19x8 bytes
-;;
-board_width: .db 8
-board_height: .db 19
-board1:
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0
 
 scroll_offset: .dw 0
 
@@ -241,6 +295,7 @@ draw_screen::
     ex de, hl
     call cpct_etm_drawTilemap4x8_ag_asm
     ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FUNC: move_scroll_right
 ;;  INPUT: 
@@ -287,6 +342,7 @@ move_scroll_down::
     ld (scroll_offset), hl
     call draw_screen
     ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FUNC: move_scroll_down
 ;;  INPUT: 
@@ -309,10 +365,11 @@ not_equal_up:
     call draw_screen
     ret
 
-;;
-;; Init Function
-;;
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNC: init_main
+;;  INPUT: 
+;;  OUTPUT:
+;;  DESTROYS: AF, BC, DE, HL
 init_main::
  ;; Set Palette
    ld    hl, #_sp_palette           ;; HL = pointer to the start of the palette array
@@ -321,8 +378,6 @@ init_main::
 
     ld  c, #0                     ;; C = 0 (Mode 0)
     call cpct_setVideoMode_asm    ;; Set Mode 0
-
-
 
     ld h, #3                ;; left pixel color
     ld l, #3                ;; right pixel color 
@@ -340,8 +395,8 @@ init_main::
     ;;(2B HL) tileset	Pointer to the start of the tileset definition (list of 32-byte tiles).
     ;;Note: it also uses current interrupt status (register I) as a value.  It should be considered as an additional parameter.
 
-    ld c, #14
-    ld b, #18
+    ld c, #18
+    ld b, #20
     ld de, #40
     ld hl, #_g_tileset_00
     call cpct_etm_setDrawTilemap4x8_ag_asm
@@ -371,7 +426,7 @@ main_loop:
     ld hl, #Key_P               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_right
+    jr z, no_right
     call move_entity_right
 no_right:
 
@@ -379,21 +434,35 @@ no_right:
     ld hl, #Key_O               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_left
+    jr z, no_left
     call move_entity_left
 no_left:
 
+;; Check jump movement
+    ld hl, #Key_Space               
+    call cpct_isKeyPressed_asm
+    or a
+    jr z, no_jump
+    call activate_jump_entity
+no_jump:
+
     ld a, e_status(ix)
     and #0b10000000
-    jp z, no_update
+    jr z, no_update
     call update_entity
  no_update:
+    ld a, e_status(ix)
+    and #0b00001000
+    jr z, no_jump_active
+    call jump_entity
+    call update_entity
+no_jump_active:
 
 ;; Check right scroll
     ld hl, #Key_L               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_right_scroll
+    jr z, no_right_scroll
     call move_scroll_right
 no_right_scroll:
 
@@ -401,7 +470,7 @@ no_right_scroll:
     ld hl, #Key_J               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_left_scroll
+    jr z, no_left_scroll
     call move_scroll_left
 no_left_scroll:
 
@@ -409,7 +478,7 @@ no_left_scroll:
     ld hl, #Key_I               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_up_scroll
+    jr z, no_up_scroll
     call move_scroll_up
 no_up_scroll:
 
@@ -417,8 +486,11 @@ no_up_scroll:
     ld hl, #Key_K               
     call cpct_isKeyPressed_asm
     or a
-    jp z, no_down_scroll
+    jr z, no_down_scroll
     call move_scroll_down
 no_down_scroll:
+
+    call cpct_waitVSYNC_asm
+    call cpct_waitVSYNC_asm
 
     jr    main_loop
